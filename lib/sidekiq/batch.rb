@@ -15,12 +15,7 @@ module Sidekiq
     attr_reader :bid, :description, :callback_queue, :created_at
 
     def initialize(existing_bid = nil)
-      @bid = existing_bid || SecureRandom.urlsafe_base64(10)
-      @existing = !(!existing_bid || existing_bid.empty?)  # Basically existing_bid.present?
-      @initialized = false
-      @created_at = Time.now.utc.to_f
-      @bidkey = "BID-" + @bid.to_s
-      @ready_to_queue = []
+      raise 'wtf'
     end
 
     def description=(description)
