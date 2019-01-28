@@ -5,7 +5,7 @@ require 'sidekiq/batch/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "sidekiq-batch"
-  spec.version       = Sidekiq::Batch::VERSION
+  spec.version       = Sidekiq::Batcher::VERSION
   spec.authors       = ["Marcin Naglik"]
   spec.email         = ["marcin.naglik@gmail.com"]
 

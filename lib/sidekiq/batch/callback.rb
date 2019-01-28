@@ -1,5 +1,5 @@
 module Sidekiq
-  class Batch
+  class Batcher
     module Callback
       class Worker
         include Sidekiq::Worker
@@ -8,7 +8,7 @@ module Sidekiq
           return unless %w(success complete).include?(event)
           clazz, method = clazz.split("#") if (clazz && clazz.class == String && clazz.include?("#"))
           method = "on_#{event}" if method.nil?
-          status = Sidekiq::Batch::Status.new(bid)
+          status = Sidekiq::Batcher::Status.new(bid)
 
           if clazz && object = Object.const_get(clazz)
             instance = object.new
@@ -24,7 +24,7 @@ module Sidekiq
             _, _, success, _, complete, pending, children, failure = Sidekiq.redis do |r|
               r.multi do
                 r.sadd("BID-#{parent_bid}-success", bid)
-                r.expire("BID-#{parent_bid}-success", Sidekiq::Batch::BID_EXPIRE_TTL)
+                r.expire("BID-#{parent_bid}-success", Sidekiq::Batcher::BID_EXPIRE_TTL)
                 r.scard("BID-#{parent_bid}-success")
                 r.sadd("BID-#{parent_bid}-complete", bid)
                 r.scard("BID-#{parent_bid}-complete")

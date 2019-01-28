@@ -1,7 +1,7 @@
 require_relative 'extension/worker'
 
 module Sidekiq
-  class Batch
+  class Batcher
     module Middleware
       class ClientMiddleware
         def call(_worker, msg, _queue, _redis_pool = nil)
@@ -16,12 +16,12 @@ module Sidekiq
         def call(_worker, msg, _queue)
           if (bid = msg['bid'])
             begin
-              Thread.current[:batch] = Sidekiq::Batch.new(bid)
+              Thread.current[:batch] = Sidekiq::Batcher.new(bid)
               yield
               Thread.current[:batch] = nil
-              Batch.process_successful_job(bid, msg['jid'])
+              Batcher.process_successful_job(bid, msg['jid'])
             rescue
-              Batch.process_failed_job(bid, msg['jid'])
+              Batcher.process_failed_job(bid, msg['jid'])
               raise
             ensure
               Thread.current[:batch] = nil
@@ -35,21 +35,21 @@ module Sidekiq
       def self.configure
         Sidekiq.configure_client do |config|
           config.client_middleware do |chain|
-            chain.add Sidekiq::Batch::Middleware::ClientMiddleware
+            chain.add Sidekiq::Batcher::Middleware::ClientMiddleware
           end
         end
         Sidekiq.configure_server do |config|
           config.client_middleware do |chain|
-            chain.add Sidekiq::Batch::Middleware::ClientMiddleware
+            chain.add Sidekiq::Batcher::Middleware::ClientMiddleware
           end
           config.server_middleware do |chain|
-            chain.add Sidekiq::Batch::Middleware::ServerMiddleware
+            chain.add Sidekiq::Batcher::Middleware::ServerMiddleware
           end
         end
-        Sidekiq::Worker.send(:include, Sidekiq::Batch::Extension::Worker)
+        Sidekiq::Worker.send(:include, Sidekiq::Batcher::Extension::Worker)
       end
     end
   end
 end
 
-Sidekiq::Batch::Middleware.configure
+Sidekiq::Batcher::Middleware.configure

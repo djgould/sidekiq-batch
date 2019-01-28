@@ -7,7 +7,7 @@ require 'sidekiq/batch/status'
 require 'sidekiq/batch/version'
 
 module Sidekiq
-  class Batch
+  class Batcher
     class NoBlockGivenError < StandardError; end
 
     BID_EXPIRE_TTL = 2_592_000
@@ -15,7 +15,12 @@ module Sidekiq
     attr_reader :bid, :description, :callback_queue, :created_at
 
     def initialize(existing_bid = nil)
-      raise 'wtf'
+      @bid = existing_bid || SecureRandom.urlsafe_base64(10)
+      @existing = !(!existing_bid || existing_bid.empty?)  # Basically existing_bid.present?
+      @initialized = false
+      @created_at = Time.now.utc.to_f
+      @bidkey = "BID-" + @bid.to_s
+      @ready_to_queue = []
     end
 
     def description=(description)
@@ -115,7 +120,7 @@ module Sidekiq
 
     def parent
       if parent_bid
-        Sidekiq::Batch.new(parent_bid)
+        Sidekiq::Batcher.new(parent_bid)
       end
     end
 
@@ -205,7 +210,7 @@ module Sidekiq
         begin
           parent_bid = !parent_bid || parent_bid.empty? ? nil : parent_bid    # Basically parent_bid.blank?
           Sidekiq::Client.push_bulk(
-            'class' => Sidekiq::Batch::Callback::Worker,
+            'class' => Sidekiq::Batcher::Callback::Worker,
             'args' => callbacks.reduce([]) do |memo, jcb|
               cb = Sidekiq.load_json(jcb) || {'callback': nil}
               memo << [cb['callback'], event, cb['opts'], bid, parent_bid]

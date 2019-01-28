@@ -1,5 +1,5 @@
 module Sidekiq
-  class Batch
+  class Batcher
     class Status
       attr_reader :bid
 

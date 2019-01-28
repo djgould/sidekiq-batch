@@ -1,4 +1,4 @@
-module Sidekiq::Batch::Extension
+module Sidekiq::Batcher::Extension
   module Worker
     def bid
       Thread.current[:batch].bid
